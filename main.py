@@ -23,8 +23,9 @@ class LEDControlApp:
         # Dictionnaire des couleurs disponibles avec leurs noms et codes hexadécimaux
         self.color_map = {
             "rouge": "#e74c3c",
-            "vert": "#2ecc71",
-            "bleu": "#3498db"
+
+            "bleu": "#3498db",
+            "noir": "#000000"
         }
 
         # Configuration de l'interface utilisateur
@@ -87,7 +88,7 @@ class LEDControlApp:
         L'utilisateur doit dire une couleur parmi celles disponibles (rouge, vert, bleu).
         """
         # Informer l'utilisateur qu'il peut parler
-        self.say_text("Veuillez dire une couleur : rouge, vert ou bleu.")
+        self.say_text("Veuillez dire une couleur : rouge, noire ou bleu .")
         recognizer = sr.Recognizer()  # Initialiser l'objet de reconnaissance vocale
 
         try:
