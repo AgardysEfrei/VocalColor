@@ -1,7 +1,8 @@
-import tkinter as tk  # Importation de la bibliothèque tkinter pour créer l'interface graphique
-from tkinter import messagebox  # Pour afficher des boîtes de dialogue d'erreur ou d'information
-import speech_recognition as sr  # Pour la reconnaissance vocale
-import pyttsx3  # Pour la synthèse vocale (text-to-speech)
+import tkinter as tk
+from tkinter import messagebox
+import speech_recognition as sr
+import pyttsx3
+import webcolors  # Pour la gestion des noms de couleurs
 
 
 class LEDControlApp:
@@ -12,20 +13,32 @@ class LEDControlApp:
         :param root: Fenêtre principale de l'application tkinter
         """
         self.root = root
-        self.root.title("Contrôle des LED avec Reconnaissance Vocale")  # Définir le titre de la fenêtre
-        self.root.geometry("500x500")  # Définir les dimensions de la fenêtre
-        self.root.resizable(False, False)  # Empêcher le redimensionnement de la fenêtre
-        self.root.config(bg="#34495e")  # Définir une couleur de fond
+        self.root.title("Contrôle des LED avec Reconnaissance Vocale")
+        self.root.geometry("500x500")
+        self.root.resizable(False, False)
+        self.root.config(bg="#34495e")  # Couleur d'arrière-plan de la fenêtre
 
         # Initialisation du moteur de synthèse vocale
         self.tts_engine = pyttsx3.init()
 
-        # Dictionnaire des couleurs disponibles avec leurs noms et codes hexadécimaux
-        self.color_map = {
-            "rouge": "#e74c3c",
-
-            "bleu": "#3498db",
-            "noir": "#000000"
+        # Dictionnaire pour la traduction des noms de couleurs en français vers l'anglais
+        self.french_to_english_colors = {
+            "rouge": "red",
+            "bleu": "blue",
+            "vert": "green",
+            "verre": "green",  # Gestion des erreurs de reconnaissance
+            "vers": "green",
+            "noir": "black",
+            "blanc": "white",
+            "jaune": "yellow",
+            "rose": "pink",
+            "orange": "orange",
+            "violet": "purple",
+            "gris": "gray",
+            "marron": "brown",
+            "magenta": "magenta",
+            "bleu ciel": "skyblue",
+            "beige": "beige",
         }
 
         # Configuration de l'interface utilisateur
@@ -33,120 +46,137 @@ class LEDControlApp:
 
     def setup_ui(self):
         """
-        Configure et crée les éléments de l'interface utilisateur (widgets).
+        Configure les composants de l'interface utilisateur (UI) de l'application.
         """
-        # Titre principal affiché en haut de la fenêtre
+        # Titre de l'application
         title_label = tk.Label(
             self.root,
             text="Contrôle des LED",
-            font=("Arial", 28, "bold"),  # Police et taille du texte
-            fg="white",  # Couleur du texte
-            bg="#34495e"  # Couleur de fond de l'étiquette
+            font=("Arial", 28, "bold"),
+            fg="white",
+            bg="#34495e"
         )
-        title_label.pack(pady=20)  # Ajout d'un espace vertical autour du titre
+        title_label.pack(pady=20)
 
-        # Cadre utilisé pour afficher la couleur sélectionnée par l'utilisateur
+        # Cadre pour afficher la couleur actuelle
         self.color_display = tk.Frame(
             self.root,
             width=300,
             height=150,
-            bg="#ecf0f1",  # Couleur initiale (grise)
+            bg="#ecf0f1",  # Couleur initiale
             relief="flat"
         )
         self.color_display.pack(pady=20)
 
-        # Bouton permettant de démarrer la reconnaissance vocale
+        # Bouton pour démarrer la reconnaissance vocale
         self.voice_button = tk.Button(
             self.root,
             text="🎙️ Démarrer la reconnaissance vocale",
-            font=("Arial", 16),  # Police et taille du texte
-            bg="#1abc9c",  # Couleur de fond du bouton
-            fg="white",  # Couleur du texte du bouton
-            activebackground="#16a085",  # Couleur du bouton lorsqu'il est activé
-            activeforeground="white",  # Couleur du texte lorsque le bouton est activé
-            cursor="hand2",  # Change le curseur en une main survolant le bouton
-            relief="flat",  # Style visuel du bouton
-            command=self.start_voice_recognition  # Lier au clic la fonction de reconnaissance vocale
+            font=("Arial", 16),
+            bg="#1abc9c",  # Couleur du bouton
+            fg="white",
+            activebackground="#16a085",  # Couleur active
+            activeforeground="white",
+            cursor="hand2",
+            relief="flat",
+            command=self.start_voice_recognition
         )
         self.voice_button.pack(pady=20)
 
-        # Étiquette d'information pour donner des instructions à l'utilisateur
+        # Label pour afficher des informations à l'utilisateur
         self.info_label = tk.Label(
             self.root,
-            text="Appuyez sur le bouton et dites une couleur : rouge, vert ou bleu.",
-            font=("Arial", 12),  # Police et taille du texte
-            fg="white",  # Couleur du texte
-            bg="#34495e",  # Couleur de fond
+            text="Appuyez sur le bouton et dites une couleur en français.",
+            font=("Arial", 12),
+            fg="white",
+            bg="#34495e",
             wraplength=400,  # Limite la largeur du texte
-            justify="center"  # Aligne le texte au centre
+            justify="center"
         )
         self.info_label.pack(pady=10)
 
     def start_voice_recognition(self):
         """
-        Démarre la reconnaissance vocale pour écouter une commande de couleur.
-        L'utilisateur doit dire une couleur parmi celles disponibles (rouge, vert, bleu).
+        Démarre la reconnaissance vocale et traite la commande utilisateur.
         """
-        # Informer l'utilisateur qu'il peut parler
-        self.say_text("Veuillez dire une couleur : rouge, noire ou bleu .")
-        recognizer = sr.Recognizer()  # Initialiser l'objet de reconnaissance vocale
+        # Message vocal pour inviter l'utilisateur à parler
+        self.say_text("Veuillez dire une couleur en français.")
+        recognizer = sr.Recognizer()
 
         try:
-            # Activer le microphone pour écouter la commande
             with sr.Microphone() as source:
-                self.info_label.config(text="🎧 Écoute en cours... Parlez maintenant.")  # Mettre à jour l'interface
-                recognizer.adjust_for_ambient_noise(source, duration=0.5)  # Ajuster le seuil pour le bruit ambiant
-                audio = recognizer.listen(source, timeout=5)  # Écouter pendant 5 secondes maximum
-                command = recognizer.recognize_google(audio, language='fr-FR')  # Reconnaître la commande en français
-                self.process_command(command.lower())  # Traiter la commande reconnue
+                self.info_label.config(text="🎧 Écoute en cours... Parlez maintenant.")
+                recognizer.adjust_for_ambient_noise(source, duration=0.5)  # Ajuste pour le bruit ambiant
+                audio = recognizer.listen(source, timeout=5)  # Écoute la commande
+                command = recognizer.recognize_google(audio, language='fr-FR')  # Reconnaissance vocale en français
+                self.process_command(command.lower())  # Traite la commande en minuscules
         except sr.UnknownValueError:
-            # Afficher un message si la commande n'est pas comprise
             messagebox.showerror("Erreur", "Je n'ai pas compris, veuillez réessayer.")
         except sr.RequestError as e:
-            # Afficher un message si le service vocal rencontre une erreur
             messagebox.showerror("Erreur", f"Erreur avec le service vocal : {e}")
         except Exception as e:
-            # Afficher un message pour toute autre erreur
             messagebox.showerror("Erreur", f"Une erreur est survenue : {e}")
 
     def process_command(self, command):
         """
-        Analyse et traite la commande vocale reçue.
-        Si la commande contient une couleur connue, met à jour l'affichage de la couleur.
+        Analyse et traite la commande utilisateur.
 
         :param command: Texte reconnu par la reconnaissance vocale
         """
-        for color, hex_color in self.color_map.items():
-            if color in command:  # Vérifie si une couleur connue est mentionnée dans la commande
-                self.update_color(hex_color, color)  # Mettre à jour l'affichage avec la couleur correspondante
+        try:
+            # Recherche d'une couleur reconnue dans la commande
+            color_hex = self.get_color_from_command(command)
+            if color_hex:
+                self.update_color(color_hex, command)  # Mise à jour de la couleur
                 return
-        # Si aucune couleur n'est reconnue, informer l'utilisateur
-        messagebox.showinfo("Commande inconnue", "Couleur non reconnue. Veuillez dire rouge, vert ou bleu.")
+        except ValueError:
+            pass
+
+        # Message si aucune couleur n'est reconnue
+        messagebox.showinfo("Commande inconnue", "Couleur non reconnue. Veuillez essayer à nouveau.")
+
+    def get_color_from_command(self, command):
+        """
+        Tente d'extraire une couleur reconnue dans une commande utilisateur.
+
+        :param command: Texte de la commande utilisateur
+        :return: Code hexadécimal de la couleur si trouvée, sinon lève une exception ValueError
+        """
+        words = command.split()  # Divise la commande en mots
+        for word in words:
+            if word in self.french_to_english_colors:  # Vérifie si le mot est une couleur connue
+                english_color = self.french_to_english_colors[word]
+                try:
+                    return webcolors.name_to_hex(english_color)  # Convertit en code hexadécimal
+                except ValueError:
+                    continue
+        raise ValueError("Aucune couleur reconnue dans la commande.")
 
     def update_color(self, color_hex, color_name):
         """
-        Met à jour la couleur affichée dans l'interface et informe l'utilisateur.
+        Met à jour la couleur affichée et informe l'utilisateur.
 
-        :param color_hex: Code hexadécimal de la couleur à afficher
+        :param color_hex: Code hexadécimal de la couleur
         :param color_name: Nom de la couleur
         """
-        self.color_display.config(bg=color_hex)  # Mettre à jour la couleur du cadre
+        self.color_display.config(bg=color_hex)  # Change la couleur du cadre
         self.info_label.config(
-            text=f"✅ Couleur actuelle : {color_name.capitalize()}")  # Mettre à jour le texte d'information
-        self.say_text(f"La couleur est maintenant {color_name}")  # Annoncer la couleur sélectionnée
+            text=f"✅ Couleur actuelle : {color_name.capitalize()}"  # Affiche la couleur sélectionnée
+        )
+        self.say_text(f"La couleur est maintenant {color_name}")  # Message vocal
 
     def say_text(self, text):
         """
-        Utilise la synthèse vocale pour parler à l'utilisateur.
+        Utilise le moteur de synthèse vocale pour lire un texte à haute voix.
 
-        :param text: Texte à prononcer
+        :param text: Texte à lire
         """
-        self.tts_engine.say(text)  # Ajouter le texte à la file d'attente de la synthèse vocale
-        self.tts_engine.runAndWait()  # Démarrer la synthèse vocale
+        self.tts_engine.say(text)
+        self.tts_engine.runAndWait()
 
 
-# Point d'entrée de l'application
+# Point d'entrée principal de l'application
 if __name__ == "__main__":
-    root = tk.Tk()  # Créer la fenêtre principale
-    app = LEDControlApp(root)  # Instancier l'application
-    root.mainloop()  # Lancer la boucle principale de l'interface
+    root = tk.Tk()  # Création de la fenêtre principale
+    app = LEDControlApp(root)  # Initialisation de l'application
+    root.mainloop()  # Lancement de la boucle principale de tkinter
